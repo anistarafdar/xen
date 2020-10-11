@@ -7,9 +7,39 @@
 #include <readline/history.h>
 #include <readline/readline.h>
 
-long eval(mpc_ast_t* t);
+typedef struct {
+	int type;
+	long num;
+	int err;
+} lval;
 
-long eval_op(long x, char* op, long y);
+// create enums for lisp value types and error types for the struct above
+enum { LVAL_NUM, LVAL_ERR };
+enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM };
+
+// create new number type for lval 
+lval lval_num(long x) {
+	lval v;
+	v.type = LVAL_NUM;
+	v.num = x;
+	return v;
+};
+
+// create new error type for lval
+lval lval_err(int x) {
+	lval v;
+	v.type = LVAL_ERR;
+	v.err = x;
+	return v;
+};
+
+//print an lval
+void lval_print(lval v);
+//print an lval and append a newline
+void lval_println(lval v) { lval_print(v); putchar('\n'); }
+
+lval eval(mpc_ast_t* t);
+lval eval_op(lval x, char* op, lval y);
 
 // "char** argv" and "char **argv" both mean the same thing, a pointer to a character pointer
 int main(int argc, char** argv) { 
@@ -25,7 +55,7 @@ int main(int argc, char** argv) {
 		"										\
 			number	 : /-?[0-9]+/ ;							\
 			operator : '+' | '-' | '*' | '/' | '%' | '^' |				\
-			           \"add\" | \"sub\" | \"mul\" | \"div\" | \"mod\" | \"pow\" ;		\
+			           \"add\" | \"sub\" | \"mul\" | \"div\" | \"mod\" | \"pow\" ;	\
 			expr	 : <number> | '(' <operator> <expr>+ ')' ;			\
 			lisp	 : /^/ <operator> <expr>+ /$/ ;					\
 		",
@@ -48,8 +78,8 @@ int main(int argc, char** argv) {
 		mpc_result_t r;
 		if (mpc_parse("<stdin", input, Lisp, &r)) {
 			// if successful evaluate the AST, then delete old tree
-			long result = eval(r.output);
-			printf("%li\n", result);
+			lval result = eval(r.output);
+			lval_println(result);
 			mpc_ast_delete(r.output);
 		} else {
 			// else print the error
@@ -67,18 +97,20 @@ int main(int argc, char** argv) {
 	return EXIT_SUCCESS;
 }
 
-long eval(mpc_ast_t* t) {
+lval eval(mpc_ast_t* t) {
 	
 	// if tagged as a number return it directly (base case)
 	if (strstr(t->tag, "number")) {
-		return atoi(t->contents);
+		// check if there is an error in conversion
+		errno = 0;
+		long x = strtol(t->contents, NULL, 10);
+		return errno != ERANGE ? lval_num(x) : lval_err(LERR_BAD_NUM);
 	}
 	
 	// the operator is always the second child
 	char* op = t->children[1]->contents;
-
 	// store the third child in x
-	long x = eval(t->children[2]);
+	lval x = eval(t->children[2]);
 
 	// iterate the remaining children and combining
 	int i = 3;
@@ -91,13 +123,45 @@ long eval(mpc_ast_t* t) {
 }
 
 // use operator string to see which operator to perform
-long eval_op(long x, char* op, long y) {
-	if ((strcmp(op, "+") == 0) || (strcmp(op, "add") == 0)) { return x + y; }
-	if ((strcmp(op, "-") == 0) || (strcmp(op, "sub") == 0)) { return x - y; }
-	if ((strcmp(op, "*") == 0) || (strcmp(op, "mul") == 0)) { return x * y; }
-	if ((strcmp(op, "/") == 0) || (strcmp(op, "div") == 0)) { return x / y; }
-	if ((strcmp(op, "%") == 0) || (strcmp(op, "mod") == 0)) { return x % y; }
-	if ((strcmp(op, "^") == 0) || (strcmp(op, "pow") == 0)) { return (int) pow((double) x, y); }
+lval eval_op(lval x, char* op, lval y) {
+	// if either value is an error return it before trying to compute
+	if (x.type == LVAL_ERR) { return x; }
+	if (y.type == LVAL_ERR) { return y; }
+	
+	if ((strcmp(op, "+") == 0) || (strcmp(op, "add") == 0)) { return lval_num(x.num + y.num); }
+	if ((strcmp(op, "-") == 0) || (strcmp(op, "sub") == 0)) { return lval_num(x.num - y.num); }
+	if ((strcmp(op, "*") == 0) || (strcmp(op, "mul") == 0)) { return lval_num(x.num * y.num); }
+	if ((strcmp(op, "/") == 0) || (strcmp(op, "div") == 0)) { 
+		// if dividing by zero catch the error otherwise continue as normal
+		return y.num == 0
+			? lval_err(LERR_DIV_ZERO)
+			: lval_num(x.num / y.num);
+	}
+	if ((strcmp(op, "%") == 0) || (strcmp(op, "mod") == 0)) { return lval_num(x.num % y.num); }
+	if ((strcmp(op, "^") == 0) || (strcmp(op, "pow") == 0)) { return lval_num((int) pow((double) x.num, y.num)); }
 
-	return 0;
+	return lval_err(LERR_BAD_OP);
 }
+
+void lval_print(lval v) {
+	switch (v.type) {
+		//if its a number then print then break
+		case LVAL_NUM: printf("%li", v.num); break;
+
+		//if the type is an error
+		case LVAL_ERR:
+			//check the error type then print it
+			if (v.err == LERR_DIV_ZERO) {
+				printf("Error: Division by zero");
+			}
+			if (v.err == LERR_BAD_OP) {
+				printf("Error: Invalid operator");
+			}
+			if (v.err == LERR_BAD_NUM) {
+				printf("Error: Invalid number");
+			}
+		break;
+	}
+}
+
+
