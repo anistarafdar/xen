@@ -16,8 +16,8 @@ char* readline(char* prompt) {
 void add_history(char* unused) {}
 
 #else
-#include <editline/readline.h>
-#include <editline/history.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 #endif
 
 /* Add SYM and SEXPR as possible lval types */
