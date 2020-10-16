@@ -8,6 +8,17 @@ This project was written as an introduction to building programming languages, t
 
 ## Getting Started
 
+On **Unix**
+
+'''console
+cc -std=c99 -Wall xen.c mpc.c -ledit -lm -o xen
+'''
+
+On **Windows**
+
+'''console
+cc -std=c99 -Wall xen.c mpc.c -o xen
+'''
 
 ## Links
 http://buildyourownlisp.com/
