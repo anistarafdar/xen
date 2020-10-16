@@ -33,4 +33,4 @@ http://hactar.port70.net/stutter/
 * show off features in the readme
 * add more useful features
 * clean repo and codebase
-* fix it for Windows
+* test compiles on other systems
