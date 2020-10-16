@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h> //for power operator
 
-#include "mpc.h" //written by books author, buildyourownlisp.com
+#include "mpc/mpc.h" //written by books author, buildyourownlisp.com
 
 #ifdef _WIN32
 
@@ -34,8 +34,8 @@ void add_history(char* unused) {}
 
 */
 
-#include "readline/readline.h"
-#include "readline/history.h"
+#include "editline/readline.h"
+#include "editline/history.h"
 #endif
 
 #define LASSERT(args, cond, fmt, ...) \
