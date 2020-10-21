@@ -8,6 +8,8 @@ This project was written as an introduction to building programming languages, t
 
 ## Getting Started
 
+Install libedit-dev for the editline libraries on Unix systems.
+
 On **Unix**
 
 ```console
