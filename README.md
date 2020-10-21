@@ -8,7 +8,7 @@ This project was written as an introduction to building programming languages, t
 
 ## Getting Started
 
-Install libedit-dev for the editline libraries on Unix systems.
+Install libedit-dev for the editline libraries on Unix systems, then build with a C99 compliant compiler, such as gcc or clang.
 
 On **Unix**
 
