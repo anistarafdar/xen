@@ -28,7 +28,7 @@ https://github.com/gtr/ivy
 http://hactar.port70.net/stutter/
 
 ## TODO
-* provide a make file
+* fix build errors and provide a make file
 * finish writing readme
 * show off features in the readme
 * add more useful features
